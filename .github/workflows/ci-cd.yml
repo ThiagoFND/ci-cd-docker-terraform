@@ -2,9 +2,9 @@ name: CI/CD Docker
 
 on:
   push:
-    branches: ["main"]   # roda sempre que houver push na branch main
+    branches: ["master"]   # roda sempre que houver push na branch main
   pull_request:
-    branches: ["main"]
+    branches: ["master"]
 
 jobs:
   build-and-push:
