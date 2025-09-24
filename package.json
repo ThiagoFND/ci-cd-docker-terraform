@@ -1,8 +1,20 @@
 {
-  "name": "ci-cd-docker",
+  "name": "meu-projeto-docker",
   "version": "1.0.0",
-  "main": "app.js",
+  "description": "Aplicação Node.js com Docker e CI/CD",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node index.js",
+    "test": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   }
 }
