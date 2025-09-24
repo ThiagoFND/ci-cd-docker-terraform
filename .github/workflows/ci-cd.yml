@@ -3,56 +3,67 @@ name: CI/CD Docker
 on:
   push:
     branches:
-      - "master"
+      - master
   pull_request:
     branches:
-      - "master"
-  workflow_dispatch: # permite executar manualmente (usaremos no deploy)
+      - master
+  workflow_dispatch: # permite rodar manualmente (deploy)
 
 jobs:
-  # 1) Rodar Testes
+  # 1) Testes
   tests:
+    name: 🔎 Executar Testes
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
+      - name: 📥 Checkout código
         uses: actions/checkout@v3
 
-      - name: Configurar Node.js
+      - name: ⚙️ Configurar Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Instalar dependências
-        run: npm install
+      - name: 📦 Instalar dependências
+        run: npm ci
 
-      - name: Executar testes
+      - name: 🧪 Rodar testes
         run: npm test
 
-  # 2) Build + Push (só se os testes passarem)
+  # 2) Build + Push da imagem (só roda se os testes passarem)
   build-and-push:
+    name: 🐳 Build e Push Docker
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
+      - name: 📥 Checkout código
         uses: actions/checkout@v3
 
-      - name: Login no DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: 🔐 Login no DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build da imagem
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest .
+      - name: ⚙️ Configurar Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Push da imagem
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest
+      - name: 🏗️ Build e Push da imagem
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:${{ github.sha }}
 
-  # 3) Deploy Manual (precisa ser disparado via botão no GitHub)
+  # 3) Deploy Manual (executado só no workflow_dispatch)
   deploy:
+    name: 🚀 Deploy Manual
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Deploy na nuvem
         run: |
-          echo "Iniciando deploy manual..."
-          # Aqui você escolhe a nuvem, por exemplo:
-          # gcloud run deploy meu-app --image=${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest --region=us-central1
+          echo "🚀 Iniciando deploy manual..."
+          echo "📦 Usando imagem: ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest"
