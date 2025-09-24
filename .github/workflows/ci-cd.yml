@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch: # Execução manual
+  push:
+    branches: [ "master" ] # troque para "main" se seu branch principal for esse
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Rodar testes
+        run: npm test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Login no DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build da imagem Docker
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/meu-projeto-docker:latest .
+
+      - name: Publicar imagem no DockerHub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/meu-projeto-docker:latest
