@@ -2,14 +2,36 @@ name: CI/CD Docker
 
 on:
   push:
-    branches: ["master"]   # roda sempre que houver push na branch main
+    branches:
+      - "master"
   pull_request:
-    branches: ["master"]
+    branches:
+      - "master"
+  workflow_dispatch: # permite executar manualmente (usaremos no deploy)
 
 jobs:
-  build-and-push:
+  # 1) Rodar Testes
+  tests:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
 
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Executar testes
+        run: npm test
+
+  # 2) Build + Push (só se os testes passarem)
+  build-and-push:
+    needs: tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
@@ -22,3 +44,15 @@ jobs:
 
       - name: Push da imagem
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest
+
+  # 3) Deploy Manual (precisa ser disparado via botão no GitHub)
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Deploy na nuvem
+        run: |
+          echo "Iniciando deploy manual..."
+          # Aqui você escolhe a nuvem, por exemplo:
+          # gcloud run deploy meu-app --image=${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest --region=us-central1
