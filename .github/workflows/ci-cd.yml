@@ -1,43 +1,24 @@
-name: CI/CD Pipeline
+name: CI/CD Docker
 
 on:
-  workflow_dispatch: # Execução manual
   push:
-    branches: [ "master" ] # troque para "main" se seu branch principal for esse
+    branches: ["main"]   # roda sempre que houver push na branch main
+  pull_request:
+    branches: ["main"]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
-
-      - name: Instalar Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: Instalar dependências
-        run: npm install
-
-      - name: Rodar testes
-        run: npm test
-
   build-and-push:
-    needs: test
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
 
       - name: Login no DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build da imagem Docker
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/meu-projeto-docker:latest .
+      - name: Build da imagem
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest .
 
-      - name: Publicar imagem no DockerHub
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/meu-projeto-docker:latest
+      - name: Push da imagem
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-docker-terraform:latest
